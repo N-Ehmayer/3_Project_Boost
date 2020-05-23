@@ -6,9 +6,11 @@ public class Rocket : MonoBehaviour {
 
     Rigidbody rigidBody;
     AudioSource audioSource;
+    float audioFadeRate = 2.5f;
+    float audioStartVolume = 1f;
 
-    bool thrusting = false;
-    bool playingSound = false;
+    [SerializeField] float rocketThrustSpeed = 100f;
+    [SerializeField] float rocketRotationSpeed = 100f;
 
     // Start is called before the first frame update
     void Start() {
@@ -18,27 +20,57 @@ public class Rocket : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
-        ProcessInput();
+        Thrust();
+        Rotate();
     }
 
-    private void ProcessInput() {
+    void OnCollisionEnter(Collision collision) {
+        switch (collision.gameObject.tag) {
+            case "Friendly":
+                print("OK");
+                break;
+            case "Fuel":
+                print("Fuel");
+                break;
+            default:
+                print("Dead");
+                // Kill the player
+                break;
+        }
+    }
+
+    private void Thrust() {     
+        float thrustSpeedThisFrame = rocketThrustSpeed * Time.deltaTime;
 
         if (Input.GetKey(KeyCode.Space)) {
-            print("Space pressed");
-            rigidBody.AddRelativeForce(Vector3.up);
+            rigidBody.AddRelativeForce(Vector3.up * thrustSpeedThisFrame);
             if (!audioSource.isPlaying) {
                 audioSource.Play();
             }
+            audioSource.volume = audioStartVolume;
         } else {
-            audioSource.Stop();
+            FadeAudioOut();
         }
+    }
+
+    private void Rotate() {
+        rigidBody.freezeRotation = true;
+        float rotationSpeedThisFrame = rocketRotationSpeed * Time.deltaTime;
 
         if (Input.GetKey(KeyCode.A)) {
-            print("Left pressed");
-            transform.Rotate(Vector3.forward);
+            transform.Rotate(Vector3.forward * rotationSpeedThisFrame);
         } else if (Input.GetKey(KeyCode.D)) {
-            print("Right pressed");
-            transform.Rotate(-Vector3.forward);
+            transform.Rotate(-Vector3.forward * rotationSpeedThisFrame);
+        }
+        rigidBody.freezeRotation = false;
+    }
+
+    private void FadeAudioOut() {
+        if (audioSource.volume > 0) {
+            audioSource.volume -= audioFadeRate * Time.deltaTime;
+            if (audioSource.volume <= 0) {
+                audioSource.Stop();
+            }
         }
     }
 }
